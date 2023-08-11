@@ -44,7 +44,6 @@
 	},
 	"dependencies": {
 		"@types/uuid": "^9.0.2",
-		"comlink": "^4.4.1",
 		"uuid": "^9.0.0"
 	}
 }
