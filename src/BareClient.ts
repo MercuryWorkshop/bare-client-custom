@@ -7,28 +7,9 @@ import type {
 import { maxRedirects } from './BareTypes';
 import type { Client, WebSocketImpl } from './Client';
 import { statusRedirect } from './Client';
-import ClientV3 from './V3';
 import { WebSocketFields } from './snapshot';
 import { validProtocol } from './webSocket';
-
-const clientCtors: [string, { new (server: URL): Client }][] = [
-	['v3', ClientV3],
-];
-
-export async function fetchManifest(
-	server: string | URL,
-	signal?: AbortSignal
-): Promise<BareManifest> {
-	const outgoing = await fetch(server, { signal });
-
-	if (!outgoing.ok) {
-		throw new Error(
-			`Unable to fetch Bare meta: ${outgoing.status} ${await outgoing.text()}`
-		);
-	}
-
-	return await outgoing.json();
-}
+import RemoteClient from './RemoteClient';
 
 // get the unhooked value
 const getRealReadyState = Object.getOwnPropertyDescriptor(
@@ -59,20 +40,20 @@ export namespace BareWebSocket {
 		 * A hook executed by this function with helper arguments for hooking the readyState property. If a hook isn't provided, bare-client will hook the property on the instance. Hooking it on an instance basis is good for small projects, but ideally the class should be hooked by the user of bare-client.
 		 */
 		readyStateHook?:
-			| ((
-					socket: WebSocket,
-					getReadyState: BareWebSocket.GetReadyStateCallback
-			  ) => void)
-			| undefined;
+		| ((
+			socket: WebSocket,
+			getReadyState: BareWebSocket.GetReadyStateCallback
+		) => void)
+		| undefined;
 		/**
 		 * A hook executed by this function with helper arguments for determining if the send function should throw an error. If a hook isn't provided, bare-client will hook the function on the instance.
 		 */
 		sendErrorHook?:
-			| ((
-					socket: WebSocket,
-					getSendError: BareWebSocket.GetSendErrorCallback
-			  ) => void)
-			| undefined;
+		| ((
+			socket: WebSocket,
+			getSendError: BareWebSocket.GetSendErrorCallback
+		) => void)
+		| undefined;
 		/**
 		 * A hook executed by this function with the URL. If a hook isn't provided, bare-client will hook the URL.
 		 */
@@ -81,11 +62,11 @@ export namespace BareWebSocket {
 		 * A hook executed by this function with a helper for getting the current fake protocol. If a hook isn't provided, bare-client will hook the protocol.
 		 */
 		protocolHook?:
-			| ((
-					socket: WebSocket,
-					getProtocol: BareWebSocket.GetProtocolCallback
-			  ) => void)
-			| undefined;
+		| ((
+			socket: WebSocket,
+			getProtocol: BareWebSocket.GetProtocolCallback
+		) => void)
+		| undefined;
 		/**
 		 * A callback executed by this function with an array of cookies. This is called once the metadata from the server is received.
 		 */
@@ -94,74 +75,76 @@ export namespace BareWebSocket {
 	}
 }
 
-export class BareClient {
-	manifest?: BareManifest;
-	private client?: Client;
-	private server: URL;
-	private working?: Promise<Client>;
-	private onDemand: boolean;
-	private onDemandSignal?: AbortSignal;
-	/**
-	 * Lazily create a BareClient. Calls to fetch and connect will request the manifest once on-demand.
-	 * @param server A full URL to the bare server.
-	 * @param signal An abort signal for fetching the manifest on demand.
-	 */
-	constructor(server: string | URL, signal?: AbortSignal);
-	/**
-	 * Immediately create a BareClient.
-	 * @param server A full URL to the bare server.
-	 * @param manifest A Bare server manifest.
-	 */
-	constructor(server: string | URL, manifest?: BareManifest);
-	constructor(server: string | URL, _?: BareManifest | AbortSignal) {
-		this.server = new URL(server);
 
-		if (!_ || _ instanceof AbortSignal) {
-			this.onDemand = true;
-			this.onDemandSignal = _;
-		} else {
-			this.onDemand = false;
-			this.loadManifest(_);
+// global variable. nasty, but neccesary
+export let gBareClientImplementation: Client | undefined;
+
+export function setBareClientImplementation(implementation: Client) {
+	gBareClientImplementation = implementation;
+}
+
+if ("ServiceWorkerGlobalScope" in self) {
+	setBareClientImplementation(new RemoteClient());
+}
+
+export function registerRemoteListener() {
+
+	(navigator as any).serviceWorker.addEventListener("message", async (event: any) => {
+
+		console.log(event);
+
+		const uid = event.data.__remote_target;
+		console.log(uid);
+		if (uid) {
+			const rid = event.data.__remote_id;
+
+
+
+			switch (event.data.__remote_value.type) {
+				case "request": {
+
+					const data = event.data.__remote_value.options;
+
+					console.log("handling request");
+
+					const rawResponse = await gBareClientImplementation!.request(data.method, data.requestHeaders, data.body, new URL(data.remote), undefined, undefined, undefined);
+
+					const body = await rawResponse.blob();
+
+					console.log("sent request");
+					console.log(rawResponse.headers);
+					(navigator as any).serviceWorker.controller?.postMessage({
+						__remote_target: uid,
+						__remote_id: rid,
+						__remote_value: {
+							status: rawResponse.status,
+							statusText: rawResponse.statusText,
+							headers: Object.fromEntries(rawResponse.headers.entries()),
+							redirected: rawResponse.redirected,
+							body
+						}
+					});
+					break;
+				}
+			}
+
 		}
-	}
-	private loadManifest(manifest: BareManifest) {
-		this.manifest = manifest;
-		this.client = this.getClient();
-		return this.client;
-	}
-	private demand() {
-		if (!this.onDemand) return this.client!;
+	});
+}
 
-		if (!this.working)
-			this.working = fetchManifest(this.server, this.onDemandSignal)
-				.then((manifest) => this.loadManifest(manifest))
-				.catch((err) => {
-					// allow the next request to re-fetch the manifest
-					// this is to prevent BareClient from permanently failing when used on demand
-					delete this.working;
-					throw err;
-				});
-
-		return this.working;
+export class BareClient {
+	constructor(...unused: any[]) {
+		(_ => _)();
 	}
-	private getClient() {
-		// newest-oldest
-		for (const [version, ctor] of clientCtors)
-			if (this.manifest!.versions.includes(version))
-				return new ctor(this.server);
 
-		throw new Error(
-			'Unable to find compatible client version. Starting from v2.0.0, @tomphttp/bare-client only supports Bare servers v3+. For more information, see https://github.com/tomphttp/bare-client/'
-		);
-	}
 	createWebSocket(
 		remote: string | URL,
 		protocols: string | string[] | undefined = [],
 		options: BareWebSocket.Options
 	): WebSocket {
-		if (!this.client)
+		if (!gBareClientImplementation)
 			throw new TypeError(
-				'You need to wait for the client to finish fetching the manifest before creating any WebSockets. Try caching the manifest data before making this request.'
+				"A request was made before the client was ready!! This is a problem on the end of whoever set the bare client implementation"
 			);
 
 		try {
@@ -187,7 +170,7 @@ export class BareClient {
 					`Failed to construct 'WebSocket': The subprotocol '${proto}' is invalid.`
 				);
 
-		const socket = this.client.connect(
+		const socket = gBareClientImplementation.connect(
 			remote,
 			protocols,
 			async () => {
@@ -268,7 +251,7 @@ export class BareClient {
 			// we have to hook .send ourselves
 			// use ...args to avoid giving the number of args a quantity
 			// no arguments will trip the following error: TypeError: Failed to execute 'send' on 'WebSocket': 1 argument required, but only 0 present.
-			socket.send = function (...args) {
+			socket.send = function(...args) {
 				const error = getSendError();
 
 				if (error) throw error;
@@ -322,14 +305,17 @@ export class BareClient {
 
 		let urlO = new URL(req.url);
 
-		const client = await this.demand();
+		if (!gBareClientImplementation)
+			throw new TypeError(
+				"A request was made before the client was ready!! This is a problem on the end of whoever set the bare client implementation"
+			);
 
 		for (let i = 0; ; i++) {
 			if ('host' in headers) headers.host = urlO.host;
 			else headers.Host = urlO.host;
 
 			const response: BareResponse & Partial<BareResponseFetch> =
-				await client.request(
+				await gBareClientImplementation.request(
 					req.method,
 					headers,
 					body,

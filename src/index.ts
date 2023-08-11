@@ -1,4 +1,4 @@
-import { BareClient, fetchManifest } from './BareClient';
+import { BareClient } from './BareClient';
 
 export * from './Client';
 export * from './BareTypes';
@@ -11,10 +11,7 @@ export * from './BareClient';
  * @param signal Abort signal when fetching the manifest
  */
 export async function createBareClient(
-	server: string | URL,
-	signal?: AbortSignal
+	...args: any[]
 ): Promise<BareClient> {
-	const manifest = await fetchManifest(server, signal);
-
-	return new BareClient(server, manifest);
+	return new BareClient();
 }

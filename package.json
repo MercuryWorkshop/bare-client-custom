@@ -41,5 +41,10 @@
 		"prettier": "^2.8.8",
 		"rollup": "^3.23.0",
 		"rollup-plugin-typescript2": "^0.34.1"
+	},
+	"dependencies": {
+		"@types/uuid": "^9.0.2",
+		"comlink": "^4.4.1",
+		"uuid": "^9.0.0"
 	}
 }
