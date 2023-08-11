@@ -11,11 +11,7 @@ import type {
   MetaCallback,
   GetRequestHeadersCallback,
 } from './Client.js';
-import type {
-  BareResponseHeaders,
-  SocketClientToServer,
-  SocketServerToClient,
-} from './V3Types.js';
+
 import md5 from './md5.js';
 import { WebSocketFields } from './snapshot.js';
 import { joinHeaders, splitHeaders } from './splitHeaderUtil.js';
