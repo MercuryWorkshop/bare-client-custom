@@ -3,6 +3,7 @@ import { BareClient } from './BareClient';
 export * from './Client';
 export * from './BareTypes';
 export * from './BareClient';
+export { WebSocketFields } from "./snapshot";
 
 /**
  *

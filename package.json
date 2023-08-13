@@ -1,5 +1,5 @@
 {
-	"name": "@tomphttp/bare-client",
+	"name": "bare-client-custom",
 	"version": "2.2.0-alpha",
 	"homepage": "https://github.com/tomphttp",
 	"bugs": {

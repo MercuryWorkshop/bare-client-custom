@@ -77,14 +77,48 @@ export namespace BareWebSocket {
 
 
 // global variable. nasty, but neccesary
-export let gBareClientImplementation: Client | undefined;
-
+declare global {
+	interface ServiceWorkerGlobalScope {
+		gBareClientImplementation: Client | undefined;
+	}
+	interface WorkerGlobalScope {
+		gBareClientImplementation: Client | undefined;
+	}
+	interface Window {
+		gBareClientImplementation: Client | undefined;
+	}
+}
 export function setBareClientImplementation(implementation: Client) {
-	gBareClientImplementation = implementation;
+	self.gBareClientImplementation = implementation;
+	console.log("WHUISDFJKASDHJKAS");
+
+	if ("window" in self) {
+		console.log("IMPLIII");
+		window.gBareClientImplementation = implementation;
+	}
 }
 
 if ("ServiceWorkerGlobalScope" in self) {
 	setBareClientImplementation(new RemoteClient());
+} else {
+	// @ts-ignore
+	let parent = self;
+
+	console.log("attempting to find an implementation");
+	//@ts-ignore
+	for (let i = 0; i < 99; i++) {
+		console.log("goign through one iteration :: " + i);
+		//@ts-ignore
+		parent = parent.parent;
+		//@ts-ignore
+		if (parent && parent["gBareClientImplementation"]) {
+			console.warn("found implementation on parent");
+			//@ts-ignore
+			setBareClientImplementation(parent["gBareClientImplementation"]);
+			break;
+		}
+
+	}
 }
 
 export function registerRemoteListener() {
@@ -107,7 +141,7 @@ export function registerRemoteListener() {
 
 					console.log("handling request");
 
-					const rawResponse = await gBareClientImplementation!.request(data.method, data.requestHeaders, data.body, new URL(data.remote), undefined, undefined, undefined);
+					const rawResponse = await self.gBareClientImplementation!.request(data.method, data.requestHeaders, data.body, new URL(data.remote), undefined, undefined, undefined);
 
 					const body = await rawResponse.blob();
 
@@ -132,6 +166,57 @@ export function registerRemoteListener() {
 	});
 }
 
+// class MockSocket implements WebSocket {
+// 	binaryType: BinaryType = "arraybuffer";
+// 	bufferedAmount = 0;
+// 	extensions = "";
+// 	onclose: ((this: WebSocket, ev: CloseEvent) => any) | null = null;
+// 	onerror: ((this: WebSocket, ev: Event) => any) | null = null;
+// 	onmessage: ((this: WebSocket, ev: MessageEvent<any>) => any) | null = null;
+// 	onopen: ((this: WebSocket, ev: Event) => any) | null = null;
+// 	protocol = "";
+// 	readyState = 0;
+// 	url = "";
+// 	close(code?: number | undefined, reason?: string | undefined): void;
+// 	close(code?: number | undefined, reason?: string | undefined): void;
+// 	close(code?: unknown, reason?: unknown): void {
+
+// 	}
+// 	send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void;
+// 	send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void;
+// 	send(data: unknown): void {
+
+// 	}
+// 	CONNECTING: 0 = 0 as const;
+// 	OPEN: 1 = 1 as const;
+// 	CLOSING: 2 = 2 as const;
+// 	CLOSED: 3 = 3 as const;
+
+// 	addEventListener<K extends keyof WebSocketEventMap>(type: K, listener: (this: WebSocket, ev: WebSocketEventMap[K]) => any, options?: boolean | AddEventListenerOptions | undefined): void;
+// 	addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions | undefined): void;
+// 	addEventListener<K extends keyof WebSocketEventMap>(type: K, listener: (this: WebSocket, ev: WebSocketEventMap[K]) => any, options?: boolean | AddEventListenerOptions | undefined): void;
+// 	addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions | undefined): void;
+// 	addEventListener(type: unknown, listener: unknown, options?: unknown): void {
+
+// 	}
+// 	removeEventListener<K extends keyof WebSocketEventMap>(type: K, listener: (this: WebSocket, ev: WebSocketEventMap[K]) => any, options?: boolean | EventListenerOptions | undefined): void;
+// 	removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions | undefined): void;
+// 	removeEventListener<K extends keyof WebSocketEventMap>(type: K, listener: (this: WebSocket, ev: WebSocketEventMap[K]) => any, options?: boolean | EventListenerOptions | undefined): void;
+// 	removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions | undefined): void;
+// 	removeEventListener(type: unknown, listener: unknown, options?: unknown): void {
+
+// 	}
+// 	dispatchEvent(event: Event): boolean;
+// 	dispatchEvent(event: Event): boolean;
+// 	dispatchEvent(event: unknown): boolean {
+// 		return true;
+// 	}
+
+// 	constructor(private client: Client) {
+
+// 	}
+
+// }
 export class BareClient {
 	constructor(...unused: any[]) {
 		(_ => _)();
@@ -142,7 +227,7 @@ export class BareClient {
 		protocols: string | string[] | undefined = [],
 		options: BareWebSocket.Options
 	): WebSocket {
-		if (!gBareClientImplementation)
+		if (!self.gBareClientImplementation)
 			throw new TypeError(
 				"A request was made before the client was ready!! This is a problem on the end of whoever set the bare client implementation"
 			);
@@ -170,43 +255,44 @@ export class BareClient {
 					`Failed to construct 'WebSocket': The subprotocol '${proto}' is invalid.`
 				);
 
-		const socket = gBareClientImplementation.connect(
-			remote,
-			protocols,
-			async () => {
-				const resolvedHeaders =
-					typeof options.headers === 'function'
-						? await options.headers()
-						: options.headers || {};
+		const socket =
+			self.gBareClientImplementation.connect(
+				remote,
+				protocols,
+				async () => {
+					const resolvedHeaders =
+						typeof options.headers === 'function'
+							? await options.headers()
+							: options.headers || {};
 
-				const requestHeaders: BareHeaders =
-					resolvedHeaders instanceof Headers
-						? Object.fromEntries(resolvedHeaders)
-						: resolvedHeaders;
+					const requestHeaders: BareHeaders =
+						resolvedHeaders instanceof Headers
+							? Object.fromEntries(resolvedHeaders)
+							: resolvedHeaders;
 
-				// user is expected to specify user-agent and origin
-				// both are in spec
+					// user is expected to specify user-agent and origin
+					// both are in spec
 
-				requestHeaders['Host'] = (remote as URL).host;
-				// requestHeaders['Origin'] = origin;
-				requestHeaders['Pragma'] = 'no-cache';
-				requestHeaders['Cache-Control'] = 'no-cache';
-				requestHeaders['Upgrade'] = 'websocket';
-				// requestHeaders['User-Agent'] = navigator.userAgent;
-				requestHeaders['Connection'] = 'Upgrade';
+					requestHeaders['Host'] = (remote as URL).host;
+					// requestHeaders['Origin'] = origin;
+					requestHeaders['Pragma'] = 'no-cache';
+					requestHeaders['Cache-Control'] = 'no-cache';
+					requestHeaders['Upgrade'] = 'websocket';
+					// requestHeaders['User-Agent'] = navigator.userAgent;
+					requestHeaders['Connection'] = 'Upgrade';
 
-				return requestHeaders;
-			},
-			(meta) => {
-				fakeProtocol = meta.protocol;
-				if (options.setCookiesCallback)
-					options.setCookiesCallback(meta.setCookies);
-			},
-			(readyState) => {
-				fakeReadyState = readyState;
-			},
-			options.webSocketImpl || WebSocket
-		);
+					return requestHeaders;
+				},
+				(meta) => {
+					fakeProtocol = meta.protocol;
+					if (options.setCookiesCallback)
+						options.setCookiesCallback(meta.setCookies);
+				},
+				(readyState) => {
+					fakeReadyState = readyState;
+				},
+				options.webSocketImpl || WebSocket
+			);
 
 		// protocol is always an empty before connecting
 		// updated when we receive the metadata
@@ -251,7 +337,7 @@ export class BareClient {
 			// we have to hook .send ourselves
 			// use ...args to avoid giving the number of args a quantity
 			// no arguments will trip the following error: TypeError: Failed to execute 'send' on 'WebSocket': 1 argument required, but only 0 present.
-			socket.send = function(...args) {
+			socket.send = function (...args) {
 				const error = getSendError();
 
 				if (error) throw error;
@@ -276,6 +362,8 @@ export class BareClient {
 				configurable: true,
 				enumerable: true,
 			});
+
+
 
 		return socket;
 	}
@@ -305,7 +393,7 @@ export class BareClient {
 
 		let urlO = new URL(req.url);
 
-		if (!gBareClientImplementation)
+		if (!self.gBareClientImplementation)
 			throw new TypeError(
 				"A request was made before the client was ready!! This is a problem on the end of whoever set the bare client implementation"
 			);
@@ -315,7 +403,7 @@ export class BareClient {
 			else headers.Host = urlO.host;
 
 			const response: BareResponse & Partial<BareResponseFetch> =
-				await gBareClientImplementation.request(
+				await self.gBareClientImplementation.request(
 					req.method,
 					headers,
 					body,
