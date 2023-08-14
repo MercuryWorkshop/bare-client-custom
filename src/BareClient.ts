@@ -90,30 +90,18 @@ declare global {
 }
 export function setBareClientImplementation(implementation: Client) {
 	self.gBareClientImplementation = implementation;
-	console.log("WHUISDFJKASDHJKAS");
-
-	if ("window" in self) {
-		console.log("IMPLIII");
-		window.gBareClientImplementation = implementation;
-	}
 }
 
 if ("ServiceWorkerGlobalScope" in self) {
 	setBareClientImplementation(new RemoteClient());
 } else {
-	// @ts-ignore
-	let parent = self;
+	let parent: any = self;
 
 	console.log("attempting to find an implementation");
-	//@ts-ignore
-	for (let i = 0; i < 99; i++) {
-		console.log("goign through one iteration :: " + i);
-		//@ts-ignore
+	for (let i = 0; i < 10; i++) {
 		parent = parent.parent;
-		//@ts-ignore
 		if (parent && parent["gBareClientImplementation"]) {
 			console.warn("found implementation on parent");
-			//@ts-ignore
 			setBareClientImplementation(parent["gBareClientImplementation"]);
 			break;
 		}
@@ -166,57 +154,6 @@ export function registerRemoteListener() {
 	});
 }
 
-// class MockSocket implements WebSocket {
-// 	binaryType: BinaryType = "arraybuffer";
-// 	bufferedAmount = 0;
-// 	extensions = "";
-// 	onclose: ((this: WebSocket, ev: CloseEvent) => any) | null = null;
-// 	onerror: ((this: WebSocket, ev: Event) => any) | null = null;
-// 	onmessage: ((this: WebSocket, ev: MessageEvent<any>) => any) | null = null;
-// 	onopen: ((this: WebSocket, ev: Event) => any) | null = null;
-// 	protocol = "";
-// 	readyState = 0;
-// 	url = "";
-// 	close(code?: number | undefined, reason?: string | undefined): void;
-// 	close(code?: number | undefined, reason?: string | undefined): void;
-// 	close(code?: unknown, reason?: unknown): void {
-
-// 	}
-// 	send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void;
-// 	send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void;
-// 	send(data: unknown): void {
-
-// 	}
-// 	CONNECTING: 0 = 0 as const;
-// 	OPEN: 1 = 1 as const;
-// 	CLOSING: 2 = 2 as const;
-// 	CLOSED: 3 = 3 as const;
-
-// 	addEventListener<K extends keyof WebSocketEventMap>(type: K, listener: (this: WebSocket, ev: WebSocketEventMap[K]) => any, options?: boolean | AddEventListenerOptions | undefined): void;
-// 	addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions | undefined): void;
-// 	addEventListener<K extends keyof WebSocketEventMap>(type: K, listener: (this: WebSocket, ev: WebSocketEventMap[K]) => any, options?: boolean | AddEventListenerOptions | undefined): void;
-// 	addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions | undefined): void;
-// 	addEventListener(type: unknown, listener: unknown, options?: unknown): void {
-
-// 	}
-// 	removeEventListener<K extends keyof WebSocketEventMap>(type: K, listener: (this: WebSocket, ev: WebSocketEventMap[K]) => any, options?: boolean | EventListenerOptions | undefined): void;
-// 	removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions | undefined): void;
-// 	removeEventListener<K extends keyof WebSocketEventMap>(type: K, listener: (this: WebSocket, ev: WebSocketEventMap[K]) => any, options?: boolean | EventListenerOptions | undefined): void;
-// 	removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions | undefined): void;
-// 	removeEventListener(type: unknown, listener: unknown, options?: unknown): void {
-
-// 	}
-// 	dispatchEvent(event: Event): boolean;
-// 	dispatchEvent(event: Event): boolean;
-// 	dispatchEvent(event: unknown): boolean {
-// 		return true;
-// 	}
-
-// 	constructor(private client: Client) {
-
-// 	}
-
-// }
 export class BareClient {
 	constructor(...unused: any[]) {
 		(_ => _)();
@@ -320,30 +257,6 @@ export class BareClient {
 			});
 		}
 
-		/**
-		 * @returns The error that should be thrown if send() were to be called on this socket according to the fake readyState value
-		 */
-		const getSendError = () => {
-			const readyState = getReadyState();
-
-			if (readyState === WebSocketFields.CONNECTING)
-				return new DOMException(
-					"Failed to execute 'send' on 'WebSocket': Still in CONNECTING state."
-				);
-		};
-
-		if (options.sendErrorHook) options.sendErrorHook(socket, getSendError);
-		else {
-			// we have to hook .send ourselves
-			// use ...args to avoid giving the number of args a quantity
-			// no arguments will trip the following error: TypeError: Failed to execute 'send' on 'WebSocket': 1 argument required, but only 0 present.
-			socket.send = function (...args) {
-				const error = getSendError();
-
-				if (error) throw error;
-				else WebSocketFields.prototype.send.call(this, ...args);
-			};
-		}
 
 		if (options.urlHook) options.urlHook(socket, remote);
 		else
