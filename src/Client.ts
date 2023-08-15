@@ -40,7 +40,8 @@ export abstract class Client {
 		getRequestHeaders: GetRequestHeadersCallback,
 		onMeta: MetaCallback,
 		onReadyState: ReadyStateCallback,
-		webSocketImpl: WebSocketImpl
+		webSocketImpl: WebSocketImpl,
+		arrayBufferImpl: ArrayBufferConstructor
 	): WebSocket;
 	abstract request(
 		method: BareMethod,
@@ -49,6 +50,7 @@ export abstract class Client {
 		remote: URL,
 		cache: BareCache | undefined,
 		duplex: string | undefined,
-		signal: AbortSignal | undefined
+		signal: AbortSignal | undefined,
+		arrayBufferImpl: ArrayBufferConstructor
 	): Promise<BareResponse>;
 }

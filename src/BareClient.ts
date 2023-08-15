@@ -75,17 +75,22 @@ export namespace BareWebSocket {
 	}
 }
 
-
-// global variable. nasty, but neccesary
+self.BCC_VERSION = "1.2.0";
+console.warn("BCC_VERSION: " + self.BCC_VERSION);
 declare global {
 	interface ServiceWorkerGlobalScope {
 		gBareClientImplementation: Client | undefined;
+		BCC_VERSION: string;
 	}
 	interface WorkerGlobalScope {
 		gBareClientImplementation: Client | undefined;
+		BCC_VERSION: string;
+
 	}
 	interface Window {
 		gBareClientImplementation: Client | undefined;
+		BCC_VERSION: string;
+
 	}
 }
 export function setBareClientImplementation(implementation: Client) {
@@ -129,7 +134,7 @@ export function registerRemoteListener() {
 
 					console.log("handling request");
 
-					const rawResponse = await self.gBareClientImplementation!.request(data.method, data.requestHeaders, data.body, new URL(data.remote), undefined, undefined, undefined);
+					const rawResponse = await self.gBareClientImplementation!.request(data.method, data.requestHeaders, data.body, new URL(data.remote), undefined, undefined, undefined, ArrayBuffer);
 
 					const body = await rawResponse.blob();
 
@@ -228,7 +233,8 @@ export class BareClient {
 				(readyState) => {
 					fakeReadyState = readyState;
 				},
-				options.webSocketImpl || WebSocket
+				options.webSocketImpl || WebSocket,
+				ArrayBuffer
 			);
 
 		// protocol is always an empty before connecting
@@ -323,7 +329,9 @@ export class BareClient {
 					urlO,
 					req.cache,
 					duplex,
-					req.signal
+					req.signal,
+					ArrayBuffer
+
 				);
 
 			response.finalURL = urlO.toString();
