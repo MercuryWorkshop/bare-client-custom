@@ -118,10 +118,7 @@ export function registerRemoteListener() {
 
 	(navigator as any).serviceWorker.addEventListener("message", async (event: any) => {
 
-		console.log(event);
-
 		const uid = event.data.__remote_target;
-		console.log(uid);
 		if (uid) {
 			const rid = event.data.__remote_id;
 
@@ -132,14 +129,11 @@ export function registerRemoteListener() {
 
 					const data = event.data.__remote_value.options;
 
-					console.log("handling request");
 
 					const rawResponse = await self.gBareClientImplementation!.request(data.method, data.requestHeaders, data.body, new URL(data.remote), undefined, undefined, undefined, ArrayBuffer);
 
 					const body = await rawResponse.blob();
 
-					console.log("sent request");
-					console.log(rawResponse.headers);
 					(navigator as any).serviceWorker.controller?.postMessage({
 						__remote_target: uid,
 						__remote_id: rid,
