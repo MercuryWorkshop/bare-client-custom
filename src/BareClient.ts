@@ -75,7 +75,7 @@ export namespace BareWebSocket {
 	}
 }
 
-self.BCC_VERSION = "1.2.0";
+self.BCC_VERSION = "1.2.1";
 console.warn("BCC_VERSION: " + self.BCC_VERSION);
 declare global {
 	interface ServiceWorkerGlobalScope {
@@ -104,10 +104,15 @@ if ("ServiceWorkerGlobalScope" in self) {
 
 	console.log("attempting to find an implementation");
 	for (let i = 0; i < 10; i++) {
-		parent = parent.parent;
-		if (parent && parent["gBareClientImplementation"]) {
-			console.warn("found implementation on parent");
-			setBareClientImplementation(parent["gBareClientImplementation"]);
+		try {
+			parent = parent.parent;
+			if (parent && parent["gBareClientImplementation"]) {
+				console.warn("found implementation on parent");
+				setBareClientImplementation(parent["gBareClientImplementation"]);
+				break;
+			}
+		} catch (e) {
+			console.log("could not find implementation")
 			break;
 		}
 
