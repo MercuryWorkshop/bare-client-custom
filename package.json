@@ -1,19 +1,19 @@
 {
 	"name": "@mercuryworkshop/bare-client-custom",
-	"version": "2.2.0-alpha",
+	"version": "2.2.1-alpha",
 	"homepage": "https://github.com/tomphttp",
 	"bugs": {
-		"url": "https://github.com/tomphttp/bare-client/issues",
-		"email": "tomp@sys32.dev"
+		"url": "https://github.com/mercuryworkshop/bare-client-custom/issues",
+		"email": "support@mercurywork.shop"
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/tomphttp/bare-client.git"
+		"url": "https://github.com/mercuryworkshop/bare-client-custom.git"
 	},
 	"author": {
-		"name": "TOMP Development",
-		"email": "tomp@sys32.dev",
-		"url": "https://github.com/tomphttp"
+		"name": "Mercury Workshop",
+		"email": "support@mercurywork.shop",
+		"url": "https://github.com/mercuryworkshop"
 	},
 	"scripts": {
 		"build": "rollup -c",

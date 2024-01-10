@@ -81,20 +81,26 @@ declare global {
 	interface ServiceWorkerGlobalScope {
 		gBareClientImplementation: Client | undefined;
 		BCC_VERSION: string;
+		BCC_DEBUG: boolean;
 	}
 	interface WorkerGlobalScope {
 		gBareClientImplementation: Client | undefined;
 		BCC_VERSION: string;
-
+		BCC_DEBUG: boolean;
 	}
 	interface Window {
 		gBareClientImplementation: Client | undefined;
 		BCC_VERSION: string;
-
+		BCC_DEBUG: boolean;
 	}
 }
 export function setBareClientImplementation(implementation: Client) {
 	self.gBareClientImplementation = implementation;
+}
+
+function log(...data: any) {
+	if (self.BCC_DEBUG)
+		console.log(data);
 }
 
 if ("ServiceWorkerGlobalScope" in self) {
@@ -133,9 +139,9 @@ export function registerRemoteListener() {
 				case "request": {
 
 					const data = event.data.__remote_value.options;
-
-
+					log(data);
 					const rawResponse = await self.gBareClientImplementation!.request(data.method, data.requestHeaders, data.body, new URL(data.remote), undefined, undefined, undefined, ArrayBuffer);
+					log(rawResponse);
 
 					const body = await rawResponse.blob();
 
