@@ -5,7 +5,7 @@ import type {
 	BareResponseFetch,
 } from './BareTypes';
 import { maxRedirects } from './BareTypes';
-import type { Client, WebSocketImpl } from './Client';
+import { Client, WebSocketImpl } from './Client';
 import { statusRedirect } from './Client';
 import { WebSocketFields } from './snapshot';
 import { validProtocol } from './webSocket';
@@ -94,14 +94,51 @@ declare global {
 		BCC_DEBUG: boolean;
 	}
 }
+const bc = new BroadcastChannel("bcc");
 export function setBareClientImplementation(implementation: Client) {
 	self.gBareClientImplementation = implementation;
 }
+
+export function setAllBareClientImplementations(name: string, ctor: any[], force: boolean) {
+	log("attempting to set an implementation on remote clients");
+	bc.postMessage({ name, ctor, force });
+}
+
+export function setAllBareClientImplementationsRemote() {
+	bc.postMessage("set-all-remote");
+}
+
 
 function log(...data: any) {
 	if (self.BCC_DEBUG)
 		console.log(data);
 }
+
+bc.addEventListener("message", event => {
+
+	if (event.data === "set-all-remote") {
+		log("Was told to become a remote listener.");
+		setBareClientImplementation(new RemoteClient());
+		return;
+	}
+	const { force, name, ctor } = event.data;
+	log(`Was told (force:${force}) to construct Client '${name}' with props ${ctor}.`);
+
+	// if we already have a working bare, don't try and make a new one
+	if (!force && !(self.gBareClientImplementation instanceof RemoteClient)) return;
+
+	const obj = (self as any)[name];
+	if (!obj) throw new Error("Invalid set-impl broadcasted");
+
+	if (obj instanceof Client)
+		setBareClientImplementation(obj);
+	else if (typeof obj === "object" && typeof obj.constructor === "function") {
+		const instance = new obj(...ctor);
+		setBareClientImplementation(instance);
+	} else {
+		throw new Error("Invalid set-impl broadcasted");
+	}
+});
 
 if ("ServiceWorkerGlobalScope" in self) {
 	setBareClientImplementation(new RemoteClient());
@@ -118,10 +155,12 @@ if ("ServiceWorkerGlobalScope" in self) {
 				break;
 			}
 		} catch (e) {
-			console.log("could not find implementation")
+			console.log("could not find implementation. using remote [MAY BE SLOW]")
+			// if there's no implementation, resort to remote. this degrades performance, but it really doesn't matter
+			//
+
 			break;
 		}
-
 	}
 }
 

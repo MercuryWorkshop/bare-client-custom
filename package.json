@@ -1,6 +1,6 @@
 {
 	"name": "@mercuryworkshop/bare-client-custom",
-	"version": "2.2.1-alpha",
+	"version": "3.0.0",
 	"homepage": "https://github.com/tomphttp",
 	"bugs": {
 		"url": "https://github.com/mercuryworkshop/bare-client-custom/issues",
@@ -43,6 +43,7 @@
 		"rollup-plugin-typescript2": "^0.34.1"
 	},
 	"dependencies": {
+		"@tomphttp/bare-client": "2.2.0-alpha",
 		"@types/uuid": "^9.0.2",
 		"uuid": "^9.0.0"
 	}

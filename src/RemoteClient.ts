@@ -24,9 +24,10 @@ export default class RemoteClient extends Client {
   private uid = uuid();
   constructor() {
     super();
-    if (!("ServiceWorkerGlobalScope" in self)) {
-      throw new TypeError("Attempt to construct RemoteClient from outside a service worker")
-    }
+    // this should be fine
+    // if (!("ServiceWorkerGlobalScope" in self)) {
+    //   throw new TypeError("Attempt to construct RemoteClient from outside a service worker")
+    // }
 
     addEventListener("message", (event) => {
       if (event.data.__remote_target === this.uid) {
