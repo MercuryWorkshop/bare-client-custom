@@ -141,12 +141,13 @@ bc.addEventListener("message", event => {
 });
 
 if ("ServiceWorkerGlobalScope" in self) {
-	setBareClientImplementation(new RemoteClient());
+	if (!self.gBareClientImplementation)
+		setBareClientImplementation(new RemoteClient());
 } else {
 	let parent: any = self;
 
 	console.log("attempting to find an implementation");
-	for (let i = 0; i < 10; i++) {
+	for (let i = 0; i < 20; i++) {
 		try {
 			parent = parent.parent;
 			if (parent && parent["gBareClientImplementation"]) {
@@ -206,6 +207,12 @@ export function registerRemoteListener() {
 export class BareClient {
 	constructor(...unused: any[]) {
 		(_ => _)();
+		if (typeof self.gBareClientImplementation !== "object")
+			return;
+		// resolve a demand promise
+		if ("then" in self.gBareClientImplementation)
+			(self.gBareClientImplementation as any).then((d: any) => self.gBareClientImplementation = d);
+
 	}
 
 	createWebSocket(
@@ -335,6 +342,11 @@ export class BareClient {
 		url: string | URL,
 		init?: RequestInit
 	): Promise<BareResponseFetch> {
+		if (typeof self.gBareClientImplementation !== "object")
+			throw new Error("bad gBareClientImplementation");
+		// resolve a demand promise
+		if ("then" in self.gBareClientImplementation)
+			self.gBareClientImplementation = await self.gBareClientImplementation;
 		// Only create an instance of Request to parse certain parameters of init such as method, headers, redirect
 		// But use init values whenever possible
 		const req = new Request(url, init);
