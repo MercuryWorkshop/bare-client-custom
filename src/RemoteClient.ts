@@ -19,10 +19,12 @@ import { v4 as uuid } from 'uuid';
 
 declare const self: ServiceWorkerGlobalScope;
 export default class RemoteClient extends Client {
+  static singleton: RemoteClient;
   private callbacks: Record<string, (message: Record<string, any>) => void> = {};
 
   private uid = uuid();
   constructor() {
+    if (RemoteClient.singleton) return RemoteClient.singleton;
     super();
     // this should be fine
     // if (!("ServiceWorkerGlobalScope" in self)) {
@@ -36,6 +38,7 @@ export default class RemoteClient extends Client {
       }
     });
 
+    RemoteClient.singleton = this;
   }
 
   async send(message: Record<string, any>, id?: string) {

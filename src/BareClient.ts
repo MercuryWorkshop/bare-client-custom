@@ -75,7 +75,7 @@ export namespace BareWebSocket {
 	}
 }
 
-self.BCC_VERSION = "1.2.1";
+self.BCC_VERSION = "2.0.3";
 console.warn("BCC_VERSION: " + self.BCC_VERSION);
 declare global {
 	interface ServiceWorkerGlobalScope {
@@ -111,12 +111,12 @@ export function setAllBareClientImplementationsRemote() {
 
 function log(...data: any) {
 	if (self.BCC_DEBUG)
-		console.log(data);
+		console.log(...data);
 }
 
-bc.addEventListener("message", event => {
+bc.addEventListener("message", async event => {
 
-	if (event.data === "set-all-remote") {
+	if (event.data === "set-all-remote" && "ServiceWorkerGlobalScope" in self) {
 		log("Was told to become a remote listener.");
 		setBareClientImplementation(new RemoteClient());
 		return;
@@ -127,14 +127,20 @@ bc.addEventListener("message", event => {
 	// if we already have a working bare, don't try and make a new one
 	if (!force && !(self.gBareClientImplementation instanceof RemoteClient)) return;
 
-	const obj = (self as any)[name];
+	// this is bad! i don't care
+	const obj = new Function(`return ${name}`)();
 	if (!obj) throw new Error("Invalid set-impl broadcasted");
 
 	if (obj instanceof Client)
 		setBareClientImplementation(obj);
-	else if (typeof obj === "object" && typeof obj.constructor === "function") {
+	else if (typeof obj.constructor === "function") {
 		const instance = new obj(...ctor);
-		setBareClientImplementation(instance);
+		if (typeof instance.demand === "function") {
+			const demand = await instance.demand();
+			setBareClientImplementation(demand || instance.client);
+		}
+		else
+			setBareClientImplementation(instance);
 	} else {
 		throw new Error("Invalid set-impl broadcasted");
 	}
