@@ -104,7 +104,7 @@ export default class RemoteClient extends Client {
       }
     );
 
-    result.rawHeaders = response.headers;
+    result.rawHeaders = response.rawHeaders;
     result.rawResponse = response;
 
     return result as BareResponse;

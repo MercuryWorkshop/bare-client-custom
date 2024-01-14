@@ -75,7 +75,7 @@ export namespace BareWebSocket {
 	}
 }
 
-self.BCC_VERSION = "2.0.3";
+self.BCC_VERSION = "2.1.3";
 console.warn("BCC_VERSION: " + self.BCC_VERSION);
 declare global {
 	interface ServiceWorkerGlobalScope {
@@ -195,6 +195,7 @@ export function registerRemoteListener() {
 						__remote_target: uid,
 						__remote_id: rid,
 						__remote_value: {
+							rawHeaders: rawResponse.rawHeaders,
 							status: rawResponse.status,
 							statusText: rawResponse.statusText,
 							headers: Object.fromEntries(rawResponse.headers.entries()),
