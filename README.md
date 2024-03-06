@@ -1,5 +1,7 @@
 # Bare-Client-Custom
 
+**this is deprecated and will no longer be recieving updates, please use [bare-mux](https://github.com/MercuryWorkshop/bare-mux) instead**
+
 
 a mock bare client allowing you to slip in custom values for testing.
 
